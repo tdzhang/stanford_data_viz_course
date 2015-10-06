@@ -13,6 +13,10 @@ get '/' do
   File.read('app/index.html')
 end
 
+get '/hw1' do
+  File.read("app/hw1.html")
+end
+
 # # CRUD routes
 # post '/' do
 # #  .. create something ..
