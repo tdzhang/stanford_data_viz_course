@@ -7,6 +7,7 @@ set :public_folder, 'app'
 # enable this site to be embedded as an iframe
 configure do
     set :protection, except: [:frame_options]
+    set :force_ssl, false
 end
 
 get '/' do
