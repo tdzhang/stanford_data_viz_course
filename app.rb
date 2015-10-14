@@ -20,7 +20,11 @@ end
 get '/hw1' do
   File.read("app/hw1.html")
 end
+# ----------------------PBL-----------------------------------
 
+get '/pbl' do
+  File.read("PBL/data_viewer.html")
+end
 # # CRUD routes
 # post '/' do
 # #  .. create something ..
