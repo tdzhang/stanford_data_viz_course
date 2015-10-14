@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Load jquery -->
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <!-- Load c3.css -->
+  <link href="http://cdnjs.cloudflare.com/ajax/libs/c3/0.1.29/c3.css" rel="stylesheet" type="text/css">
+  <!-- Load d3.js and c3.js -->
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.js" charset="utf-8"></script>
+  <script src="http://rawgit.com/masayuki0812/c3/master/c3.js"></script>
+  <!-- Load underscore.js -->
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.1/underscore-min.js"></script>
+  <script src="jquery.csv-0.71.min.js"></script>
+
+  <style>
+      .c3-line {
+          stroke-width: 1px;
+          stroke, "green";
+      }
+
+      .c3-bar {
+          fill-opacity: 0.5;
+          stroke-width: 0;
+
+      }
+    </style>
+
+  <title>Page Title</title>
+
+</head>
+<!----------------------------------------------------------------------------->
+<body>
+<div id=inputs class=clearfix>
+  <input type=file id=files name=files[] multiple />
+  <input id=btnDraw type="button" value="draw" />
+</div>
+<hr />
+<output id=list>
+</output>
+<hr />
+<div id="chart"></div>
+
+
+<script type="text/javascript">
+var data = [];
+var utc_time_stamp=[];
+var shoulder_l_x=[];
+var max_rate, min_rate;
+
+$(document).ready(function() {
+    // Button: Choose file
+    $('#files').bind('change', handleFileSelect);
+    // Button: Draw graphes
+    $("#btnDraw").click(function(){
+        drawGraph();
+    });
+});
+
+// get the rgb color string for given (r,g,b) values
+function rgbStr(r, g, b) {
+    return "rgb("+r.toString()+","+g.toString()+","+b.toString()+")";
+}
+
+function handleFileSelect(evt) {
+  var files = evt.target.files; // FileList object
+  var file = files[0];
+
+  // read the file metadata
+  var output = ''
+      output += '<span style="font-weight:bold;">' + escape(file.name) + '</span><br />\n';
+      output += ' - FileType: ' + (file.type || 'n/a') + '<br />\n';
+      output += ' - FileSize: ' + file.size + ' bytes<br />\n';
+      output += ' - LastModified: ' + (file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() : 'n/a') + '<br />\n';
+
+  // read the file contents
+  handleCsvFile(file);
+
+  // post the results
+  $('#list').append(output);
+}
+
+function handleCsvFile(file) {
+  var reader = new FileReader();
+  reader.readAsText(file);
+  reader.onload = function(event){
+    var csv = event.target.result;
+    data = $.csv.toObjects(csv);
+
+    utc_time_stamp=_.pluck(data, 'utc_time_stamp');
+    var format = d3.time.format("%Y-%m-%d %H:%M:%S")
+    utc_time_stamp = _.map(utc_time_stamp, function(str){ return format.parse(str); })
+    shoulder_l_x = _.pluck(data, 'shoulder_l_x');
+    shoulder_l_x = _.map(shoulder_l_x, function(str){ return parseFloat(str); })
+    max_rate = Math.max.apply(null, shoulder_l_x);
+    min_rate = Math.min.apply(null, shoulder_l_x);
+    utc_time_stamp.unshift('x');
+    shoulder_l_x.unshift('shoulder_l_x');
+  };
+  reader.onerror = function(){ alert('Unable to read ' + file.fileName); };
+}
+
+function drawGraph(){
+    arr_same_vals = Array.apply(null, Array(shoulder_l_x.length -1 )).map(function(){return max_rate});
+    arr_same_vals.unshift('Background1');
+    arr_same_vals2 = Array.apply(null, Array(shoulder_l_x.length -1 )).map(function(){return min_rate});
+    arr_same_vals2.unshift('Background2');
+    var chart = c3.generate({
+        size: {
+            height: 240,
+            //width: 480
+        },
+        data: {
+            x: 'x',
+            columns: [
+                utc_time_stamp,
+                shoulder_l_x
+            ],
+            type: 'line',
+            color:function(color,d){
+                r=115;
+                g=200;
+                b=(shoulder_l_x[d.index+1]-min_rate)/(max_rate-min_rate)*255;
+                console.log(b);
+                return rgbStr(r,g,Math.floor(b));
+            }
+        },
+        /*
+        subchart: {
+          show: true
+        },
+        zoom: {
+          enabled: true
+        },
+        */
+        axis: {
+            x: {
+                type: 'timeseries',
+                tick: {
+                    format: "%Y-%m-%d %H:%M:%S"
+                }
+            },
+            y: {
+                max: max_rate,
+                min: min_rate,
+            }
+        },
+        bar: {
+            zerobased: true,
+            width: {
+                ratio: 1.0 // this makes bar width 80% of length between ticks
+            }
+        },
+        legend: {
+            hide: ['Background1', 'Background2']
+        }
+    });
+    setTimeout(function () {
+    	chart.load({
+            x: 'x',
+            columns: [
+                utc_time_stamp,
+                arr_same_vals,
+            ],
+            type: 'bar'
+        });
+    }, 1000);
+    setTimeout(function () {
+    	chart.load({
+            x: 'x',
+            columns: [
+                utc_time_stamp,
+                arr_same_vals2,
+            ],
+            type: 'bar'
+        });
+    }, 1500);
+}
+/*
+function myFunction(){
+    data = [{"Date": "2014-12-31", "Value": 5.6}, {"Date": "2014-09-30", "Value": 5.6}, {"Date": "2014-06-30", "Value": 4.8}, {"Date": "2014-03-31", "Value": 6.8}, {"Date": "2013-12-31", "Value": 5.7}, {"Date": "2013-09-30", "Value": 5.7}, {"Date": "2013-06-30", "Value": 4.9}, {"Date": "2013-03-31", "Value": 6.8}, {"Date": "2012-12-31", "Value": 5.8}, {"Date": "2012-09-30", "Value": 5.9}, {"Date": "2012-06-30", "Value": 4.9}, {"Date": "2012-03-31", "Value": 6.7}, {"Date": "2011-12-31", "Value": 6.0}, {"Date": "2011-09-30", "Value": 5.7}, {"Date": "2011-06-30", "Value": 5.0}, {"Date": "2011-03-31", "Value": 6.9}, {"Date": "2010-12-31", "Value": 6.1}, {"Date": "2010-09-30", "Value": 5.9}, {"Date": "2010-06-30", "Value": 5.0}, {"Date": "2010-03-31", "Value": 7.4}, {"Date": "2009-12-31", "Value": 6.5}, {"Date": "2009-09-30", "Value": 6.7}, {"Date": "2009-06-30", "Value": 6.3}, {"Date": "2009-03-31", "Value": 9.3}, {"Date": "2008-12-31", "Value": 7.5}, {"Date": "2008-09-30", "Value": 6.7}, {"Date": "2008-06-30", "Value": 5.7}, {"Date": "2008-03-31", "Value": 7.8}, {"Date": "2007-12-31", "Value": 6.4}, {"Date": "2007-09-30", "Value": 6.5}, {"Date": "2007-06-30", "Value": 5.5}, {"Date": "2007-03-31", "Value": 7.6}, {"Date": "2006-12-31", "Value": 6.4}, {"Date": "2006-09-30", "Value": 6.4}, {"Date": "2006-06-30", "Value": 5.5}, {"Date": "2006-03-31", "Value": 7.5}, {"Date": "2005-12-31", "Value": 6.5}, {"Date": "2005-09-30", "Value": 6.4}, {"Date": "2005-06-30", "Value": 5.5}, {"Date": "2005-03-31", "Value": 8.0}, {"Date": "2004-12-31", "Value": 6.5}, {"Date": "2004-09-30", "Value": 6.6}, {"Date": "2004-06-30", "Value": 5.5}, {"Date": "2004-03-31", "Value": 8.2}, {"Date": "2003-12-31", "Value": 6.6}, {"Date": "2003-09-30", "Value": 6.5}, {"Date": "2003-06-30", "Value": 5.9}, {"Date": "2003-03-31", "Value": 8.9}, {"Date": "2002-12-31", "Value": 7.1}, {"Date": "2002-09-30", "Value": 7.0}, {"Date": "2002-06-30", "Value": 6.1}, {"Date": "2002-03-31", "Value": 9.1}, {"Date": "2001-12-31", "Value": 7.8}, {"Date": "2001-09-30", "Value": 7.8}, {"Date": "2001-06-30", "Value": 6.7}, {"Date": "2001-03-31", "Value": 9.5}, {"Date": "2000-12-31", "Value": 7.2}, {"Date": "2000-09-30", "Value": 7.2}, {"Date": "2000-06-30", "Value": 6.1}, {"Date": "2000-03-31", "Value": 8.9}];
+
+    dates = _.pluck(data, "Date");
+    dates.reverse()
+    dates.unshift('x');
+    rates   = _.pluck(data, "Value");
+    var max_rate = Math.max.apply(null, rates);
+    var min_rate = Math.min.apply(null, rates);
+    rates.unshift('Job Loss Percentage');
+    arr_same_vals = Array.apply(null, Array(rates.length -1 )).map(function(){return max_rate});
+    arr_same_vals.unshift('Background');
+
+    var rgbStr = function(r, g, b) {
+    	return "rgb("+r.toString()+","+g.toString()+","+b.toString()+")";
+    };
+
+    var chart = c3.generate({
+        data: {
+            x: 'x',
+            columns: [
+                dates,
+                rates
+            ],
+            type: 'line',
+            color:function(color,d){
+                r=115;
+                g=200;
+                b=(rates[d.index+1]-min_rate)/(max_rate-min_rate)*255;
+                console.log(b);
+                return rgbStr(r,g,b);
+            }
+        },
+        axis: {
+            x: {
+                type: 'timeseries',
+                tick: {
+                    format: '%Y-%m-%d'
+                }
+            },
+            y: {
+                max: max_rate,
+                min: min_rate,
+                // Range includes padding, set 0 if no padding needed
+                // padding: {top:0, bottom:0}
+            }
+        },
+        bar: {
+            width: {
+                ratio: 1.0 // this makes bar width 80% of length between ticks
+            }
+        }
+    });
+    setTimeout(function () {
+    	chart.load({
+            columns: [
+                arr_same_vals
+            ],
+            type: 'bar'
+        });
+    }, 1000);
+}
+*/
+</script>
+
+</body>
+
+</html>
