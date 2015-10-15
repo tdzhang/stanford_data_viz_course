@@ -14,12 +14,12 @@
 
   <style>
       .c3-line {
-          stroke-width: 1px;
+          stroke-width: 2px;
           stroke, "green";
       }
 
       .c3-bar {
-          fill-opacity: 0.5;
+          fill-opacity: 0.85;
           stroke-width: 0;
 
       }
@@ -39,9 +39,37 @@
 </output>
 <hr />
 <h2>Kinect Data</h2>
-<div id="plot_div">
-</div>
 
+<div id="chart0"></div>
+<div id="chart1"></div>
+<div id="chart2"></div>
+<div id="chart3"></div>
+<div id="chart4"></div>
+<div id="chart5"></div>
+<div id="chart6"></div>
+<div id="chart7"></div>
+<div id="chart8"></div>
+<div id="chart9"></div>
+<div id="chart10"></div>
+<div id="chart11"></div>
+<div id="chart12"></div>
+<div id="chart13"></div>
+<div id="chart14"></div>
+<div id="chart15"></div>
+<div id="chart16"></div>
+<div id="chart17"></div>
+<div id="chart18"></div>
+<div id="chart19"></div>
+<div id="chart20"></div>
+<div id="chart21"></div>
+<div id="chart22"></div>
+<div id="chart23"></div>
+<div id="chart24"></div>
+<div id="chart25"></div>
+<div id="chart26"></div>
+<div id="chart27"></div>
+<div id="chart28"></div>
+<div id="chart29"></div>
 
 <script type="text/javascript">
 var data = []; // raw data from csv file
@@ -50,22 +78,38 @@ var header_items = []; // array of header names (strings)
 var time_stamp_col_name = "utc_time_stamp";
 var utc_time_stamp=[];
 
+var plot_fields=[];
+var plot_index=0;
+
+var charts=[];
+
+
 $(document).ready(function() {
     // Button: Choose file
     $('#files').bind('change', handleFileSelect);
     // Button: Draw graphes
     $("#btnDraw").click(function(){
         //clear #plot_div
-        var plot_div = document.getElementById("plot_div");
-        plot_div.innerHTML = "";
+        //var plot_div = document.getElementById("plot_div");
+        //plot_div.innerHTML = "";
 
-        plot_fields = ["hand_l_y","Beta2"];
-        plot_index = 0;
-        repeatPlot();
+        // plot chart for all items in plot_fields
+        var plot_fields = [ "heart_rate_interval", "head_x", "head_y", "head_z", "shoulder_l_x", "shoulder_l_y", "shoulder_l_z", "shoulder_r_x", "shoulder_r_y", "shoulder_r_z", "Attention", "Meditation", "Theta", "Gamma1"];
+
+        // draw chart
+        var index;
+        for (index=0;index<plot_fields.length;index++){
+            console.log("plot"+index);
+            var col_name = plot_fields[index];
+            drawGraph(utc_time_stamp, plot_data[col_name]['data'], col_name,
+                      plot_data[col_name]['min'], plot_data[col_name]['max'], '#chart'+index);
+        }
+
     });
 });
 
 function repeatPlot(){
+    // draw all plot_fields
     if (plot_index < plot_fields.length){
         console.log("Plot:"+plot_index);
         setTimeout(function(){
@@ -73,13 +117,13 @@ function repeatPlot(){
             plot_div.innerHTML += ('<h3>'+plot_fields[plot_index]+'</h3>');
             plot_div.innerHTML += ('<div id="chart'+plot_index+'"></div>');
             // draw chart
-            chart_id = '#chart'+plot_index;
+            chart_ids[plot_index] = '#chart'+plot_index;
             column_name = plot_fields[plot_index];
             console.log(column_name);
             x_data=plot_data[column_name]['data'];
             min_val=plot_data[column_name]['min'];
             max_val=plot_data[column_name]['max'];
-            drawGraph(chart_id, utc_time_stamp, x_data, column_name, min_val, max_val);
+            drawGraph(utc_time_stamp, x_data, column_name, min_val, max_val, plot_index);
             plot_index++;
             repeatPlot();
         }, 8000);
@@ -133,7 +177,7 @@ function handleCsvFile(file) {
                     plot_data[column_name]['isNumber'] = false;
                     return str;
                 } else {
-                    return parseFloat(str)
+                    return parseFloat(str).toFixed(4)
                 }
         });
         if(plot_data[column_name]['isNumber']){
@@ -151,13 +195,15 @@ function handleCsvFile(file) {
   reader.onerror = function(){ alert('Unable to read ' + file.fileName); };
 }
 
-function drawGraph(chart_id, x_timestamp, x_data, column_name, min_val, max_val){
-    plot_data_ = x_data;
+function drawGraph(timestamp, x_data, column_name, min_val, max_val, chart_id){
+    var plot_data_ = x_data.slice();
+    var x_timestamp = timestamp.slice();
     plot_data_.unshift(column_name);
-    arr_same_vals = Array.apply(null, Array(plot_data_.length -1 )).map(function(){return max_val});
+    var arr_same_vals = Array.apply(null, Array(plot_data_.length -1 )).map(function(){return max_val});
     arr_same_vals.unshift('Background1');
-    arr_same_vals2 = Array.apply(null, Array(plot_data_.length -1 )).map(function(){return min_val});
+    var arr_same_vals2 = Array.apply(null, Array(plot_data_.length -1 )).map(function(){return min_val});
     arr_same_vals2.unshift('Background2');
+
     var chart = c3.generate({
         size: {
             height: 140,
@@ -171,10 +217,10 @@ function drawGraph(chart_id, x_timestamp, x_data, column_name, min_val, max_val)
             ],
             type: 'line',
             color:function(color,d){
-                r=115;
-                g=200;
-                b=(plot_data_[d.index+1]-min_val)/(max_val-min_val)*255;
-                return rgbStr(r,g,Math.floor(b));
+                r=185;
+                g=255-(plot_data_[d.index+1]-min_val)/(max_val-min_val)*255;
+                b=180;
+                return rgbStr(Math.floor(r),Math.floor(g),Math.floor(b));
             }
         },
         axis: {
@@ -187,6 +233,9 @@ function drawGraph(chart_id, x_timestamp, x_data, column_name, min_val, max_val)
             y: {
                 max: max_val,
                 min: min_val,
+                tick: {
+                    format: d3.format("+09.2f")
+                }
             }
         },
         bar: {
@@ -195,31 +244,35 @@ function drawGraph(chart_id, x_timestamp, x_data, column_name, min_val, max_val)
                 ratio: 1.0 // this makes bar width 80% of length between ticks
             }
         },
+        point: {
+          r: 1
+        },
         legend: {
             hide: ['Background1', 'Background2']
         },
         bindto: chart_id
     });
-    setTimeout(function () {
-    	chart.load({
+
+
+    chart.load({
             x: 'x',
             columns: [
                 x_timestamp,
                 arr_same_vals,
             ],
-            type: 'bar'
+            type: 'bar',
+            bindto: chart_id
         });
-    }, 500);
-    setTimeout(function () {
-    	chart.load({
+    chart.load({
             x: 'x',
             columns: [
                 x_timestamp,
                 arr_same_vals2,
             ],
-            type: 'bar'
+            type: 'bar',
+            bindto: chart_id
         });
-    }, 1000);
+
 }
 /*
 function myFunction(){
