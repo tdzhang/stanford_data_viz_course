@@ -39,29 +39,59 @@
 </output>
 <hr />
 <h2>Kinect Data</h2>
-<div id="chart"></div>
+<div id="plot_div">
+</div>
 
 
 <script type="text/javascript">
-var data = [];
+var data = []; // raw data from csv file
+var plot_data = {}; // header sperated data
+var header_items = []; // array of header names (strings)
+var time_stamp_col_name = "utc_time_stamp";
 var utc_time_stamp=[];
-var shoulder_l_x=[];
-var max_rate, min_rate;
 
 $(document).ready(function() {
     // Button: Choose file
     $('#files').bind('change', handleFileSelect);
     // Button: Draw graphes
     $("#btnDraw").click(function(){
-        drawGraph();
+        //clear #plot_div
+        var plot_div = document.getElementById("plot_div");
+        plot_div.innerHTML = "";
+
+        plot_fields = ["hand_l_y","Beta2"];
+        plot_index = 0;
+        repeatPlot();
     });
 });
+
+function repeatPlot(){
+    if (plot_index < plot_fields.length){
+        console.log("Plot:"+plot_index);
+        setTimeout(function(){
+            // add chart div
+            plot_div.innerHTML += ('<h3>'+plot_fields[plot_index]+'</h3>');
+            plot_div.innerHTML += ('<div id="chart'+plot_index+'"></div>');
+            // draw chart
+            chart_id = '#chart'+plot_index;
+            column_name = plot_fields[plot_index];
+            console.log(column_name);
+            x_data=plot_data[column_name]['data'];
+            min_val=plot_data[column_name]['min'];
+            max_val=plot_data[column_name]['max'];
+            drawGraph(chart_id, utc_time_stamp, x_data, column_name, min_val, max_val);
+            plot_index++;
+            repeatPlot();
+        }, 8000);
+    }
+}
 
 // get the rgb color string for given (r,g,b) values
 function rgbStr(r, g, b) {
     return "rgb("+r.toString()+","+g.toString()+","+b.toString()+")";
 }
 
+// File select handler
 function handleFileSelect(evt) {
   var files = evt.target.files; // FileList object
   var file = files[0];
@@ -87,23 +117,46 @@ function handleCsvFile(file) {
     var csv = event.target.result;
     data = $.csv.toObjects(csv);
 
-    utc_time_stamp=_.pluck(data, 'utc_time_stamp');
+    // seperate data into different keys
+    plot_data={};
+    header_items = Object.keys(data[0]);
+    var index;
+    for (index = 0; index < header_items.length; ++index) {
+        var column_name = header_items[index];
+        if(!(column_name in plot_data)){
+            plot_data[column_name]={};
+        }
+        plot_data[column_name]['isNumber'] = true;
+        plot_data[column_name]['data'] = _.map(_.pluck(data, column_name),
+            function(str){
+                if(isNaN(str)) {
+                    plot_data[column_name]['isNumber'] = false;
+                    return str;
+                } else {
+                    return parseFloat(str)
+                }
+        });
+        if(plot_data[column_name]['isNumber']){
+            plot_data[column_name]['max'] = Math.max.apply(null, plot_data[column_name]['data']);
+            plot_data[column_name]['min'] = Math.min.apply(null, plot_data[column_name]['data']);
+        }
+    }
+    // Handle time stamp column
+    delete plot_data[time_stamp_col_name];
+    utc_time_stamp=_.pluck(data, time_stamp_col_name);
     var format = d3.time.format("%Y-%m-%d %H:%M:%S")
     utc_time_stamp = _.map(utc_time_stamp, function(str){ return format.parse(str); })
-    shoulder_l_x = _.pluck(data, 'shoulder_l_x');
-    shoulder_l_x = _.map(shoulder_l_x, function(str){ return parseFloat(str); })
-    max_rate = Math.max.apply(null, shoulder_l_x);
-    min_rate = Math.min.apply(null, shoulder_l_x);
     utc_time_stamp.unshift('x');
-    shoulder_l_x.unshift('shoulder_l_x');
   };
   reader.onerror = function(){ alert('Unable to read ' + file.fileName); };
 }
 
-function drawGraph(){
-    arr_same_vals = Array.apply(null, Array(shoulder_l_x.length -1 )).map(function(){return max_rate});
+function drawGraph(chart_id, x_timestamp, x_data, column_name, min_val, max_val){
+    plot_data_ = x_data;
+    plot_data_.unshift(column_name);
+    arr_same_vals = Array.apply(null, Array(plot_data_.length -1 )).map(function(){return max_val});
     arr_same_vals.unshift('Background1');
-    arr_same_vals2 = Array.apply(null, Array(shoulder_l_x.length -1 )).map(function(){return min_rate});
+    arr_same_vals2 = Array.apply(null, Array(plot_data_.length -1 )).map(function(){return min_val});
     arr_same_vals2.unshift('Background2');
     var chart = c3.generate({
         size: {
@@ -113,26 +166,17 @@ function drawGraph(){
         data: {
             x: 'x',
             columns: [
-                utc_time_stamp,
-                shoulder_l_x
+                x_timestamp,
+                plot_data_
             ],
             type: 'line',
             color:function(color,d){
                 r=115;
                 g=200;
-                b=(shoulder_l_x[d.index+1]-min_rate)/(max_rate-min_rate)*255;
-                console.log(b);
+                b=(plot_data_[d.index+1]-min_val)/(max_val-min_val)*255;
                 return rgbStr(r,g,Math.floor(b));
             }
         },
-        /*
-        subchart: {
-          show: true
-        },
-        zoom: {
-          enabled: true
-        },
-        */
         axis: {
             x: {
                 type: 'timeseries',
@@ -141,8 +185,8 @@ function drawGraph(){
                 }
             },
             y: {
-                max: max_rate,
-                min: min_rate,
+                max: max_val,
+                min: min_val,
             }
         },
         bar: {
@@ -153,28 +197,29 @@ function drawGraph(){
         },
         legend: {
             hide: ['Background1', 'Background2']
-        }
+        },
+        bindto: chart_id
     });
     setTimeout(function () {
     	chart.load({
             x: 'x',
             columns: [
-                utc_time_stamp,
+                x_timestamp,
                 arr_same_vals,
             ],
             type: 'bar'
         });
-    }, 1000);
+    }, 500);
     setTimeout(function () {
     	chart.load({
             x: 'x',
             columns: [
-                utc_time_stamp,
+                x_timestamp,
                 arr_same_vals2,
             ],
             type: 'bar'
         });
-    }, 1500);
+    }, 1000);
 }
 /*
 function myFunction(){
