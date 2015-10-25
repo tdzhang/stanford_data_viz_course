@@ -30,17 +30,21 @@
 </head>
 <!----------------------------------------------------------------------------->
 <body>
+<h2>Choose Csv File and Draw</h2>
 <div id=inputs class=clearfix>
   <input type=file id=files name=files[] multiple />
   <input id=btnDraw type="button" value="draw" />
 </div>
 <hr />
+<h2>Csv File Info:</h2>
 <output id=list>
 </output>
 <hr />
-<h2>Heart Rate</h2>
+<h2>Please check the field you want to plot (utc_time_stamp will be the x-axis automatically):</h2>
+<div id="headerList"></div>
+<hr />
+
 <div id="chart0"></div>
-<h2>Kinect</h2>
 <div id="chart1"></div>
 <div id="chart2"></div>
 <div id="chart3"></div>
@@ -50,7 +54,6 @@
 <div id="chart7"></div>
 <div id="chart8"></div>
 <div id="chart9"></div>
-<h2>MindWave</h2>
 <div id="chart10"></div>
 <div id="chart11"></div>
 <div id="chart12"></div>
@@ -94,9 +97,20 @@ $(document).ready(function() {
         //var plot_div = document.getElementById("plot_div");
         //plot_div.innerHTML = "";
 
+        //----------------------------------------------------------------
+        plot_fields=[];
+        for (index = 0; index < header_items.length; ++index) {
+            var item = header_items[index];
+            if($('#'+item).is(':checked')){
+                plot_fields.push(item);
+            }
+        }
+        console.log(plot_fields);
+        //----------------------------------------------------------------
         // plot chart for all items in plot_fields
-        var plot_fields = [ "heart_rate_interval", "head_x", "head_y", "head_z", "shoulder_l_x", "shoulder_l_y", "shoulder_l_z", "shoulder_r_x", "shoulder_r_y", "shoulder_r_z", "Attention", "Meditation", "Theta", "Gamma1"];
+        //var plot_fields = [ "heart_rate_interval", "head_x", "head_y", "head_z", "shoulder_l_x", "shoulder_l_y", "shoulder_l_z", "shoulder_r_x", "shoulder_r_y", "shoulder_r_z", "Attention", "Meditation", "Theta", "Gamma1"];
 
+        //----------------------------------------------------------------
         // draw chart
         var index;
         for (index=0;index<plot_fields.length;index++){
@@ -186,6 +200,17 @@ function handleCsvFile(file) {
             plot_data[column_name]['min'] = Math.min.apply(null, plot_data[column_name]['data']);
         }
     }
+
+    //------------------------------------------------------------------------------
+    // add checkboxes for all the header items
+    $("#headerList").empty();
+    for (index = 0; index < header_items.length; ++index) {
+        var item = header_items[index];
+        var html_Str = '<div class="item"><input type="checkbox" id="' + item + '" name="'  + item+ 'VisibleCheckbox" ><label for="'+item+'">'+item+'</label></div>';
+        $("#headerList").append(html_Str);
+    }
+
+    //------------------------------------------------------------------------------
     // Handle time stamp column
     delete plot_data[time_stamp_col_name];
     utc_time_stamp=_.pluck(data, time_stamp_col_name);
@@ -277,70 +302,7 @@ function drawGraph(timestamp, x_data, column_name, min_val, max_val, chart_id){
         */
 
 }
-/*
-function myFunction(){
-    data = [{"Date": "2014-12-31", "Value": 5.6}, {"Date": "2014-09-30", "Value": 5.6}, {"Date": "2014-06-30", "Value": 4.8}, {"Date": "2014-03-31", "Value": 6.8}, {"Date": "2013-12-31", "Value": 5.7}, {"Date": "2013-09-30", "Value": 5.7}, {"Date": "2013-06-30", "Value": 4.9}, {"Date": "2013-03-31", "Value": 6.8}, {"Date": "2012-12-31", "Value": 5.8}, {"Date": "2012-09-30", "Value": 5.9}, {"Date": "2012-06-30", "Value": 4.9}, {"Date": "2012-03-31", "Value": 6.7}, {"Date": "2011-12-31", "Value": 6.0}, {"Date": "2011-09-30", "Value": 5.7}, {"Date": "2011-06-30", "Value": 5.0}, {"Date": "2011-03-31", "Value": 6.9}, {"Date": "2010-12-31", "Value": 6.1}, {"Date": "2010-09-30", "Value": 5.9}, {"Date": "2010-06-30", "Value": 5.0}, {"Date": "2010-03-31", "Value": 7.4}, {"Date": "2009-12-31", "Value": 6.5}, {"Date": "2009-09-30", "Value": 6.7}, {"Date": "2009-06-30", "Value": 6.3}, {"Date": "2009-03-31", "Value": 9.3}, {"Date": "2008-12-31", "Value": 7.5}, {"Date": "2008-09-30", "Value": 6.7}, {"Date": "2008-06-30", "Value": 5.7}, {"Date": "2008-03-31", "Value": 7.8}, {"Date": "2007-12-31", "Value": 6.4}, {"Date": "2007-09-30", "Value": 6.5}, {"Date": "2007-06-30", "Value": 5.5}, {"Date": "2007-03-31", "Value": 7.6}, {"Date": "2006-12-31", "Value": 6.4}, {"Date": "2006-09-30", "Value": 6.4}, {"Date": "2006-06-30", "Value": 5.5}, {"Date": "2006-03-31", "Value": 7.5}, {"Date": "2005-12-31", "Value": 6.5}, {"Date": "2005-09-30", "Value": 6.4}, {"Date": "2005-06-30", "Value": 5.5}, {"Date": "2005-03-31", "Value": 8.0}, {"Date": "2004-12-31", "Value": 6.5}, {"Date": "2004-09-30", "Value": 6.6}, {"Date": "2004-06-30", "Value": 5.5}, {"Date": "2004-03-31", "Value": 8.2}, {"Date": "2003-12-31", "Value": 6.6}, {"Date": "2003-09-30", "Value": 6.5}, {"Date": "2003-06-30", "Value": 5.9}, {"Date": "2003-03-31", "Value": 8.9}, {"Date": "2002-12-31", "Value": 7.1}, {"Date": "2002-09-30", "Value": 7.0}, {"Date": "2002-06-30", "Value": 6.1}, {"Date": "2002-03-31", "Value": 9.1}, {"Date": "2001-12-31", "Value": 7.8}, {"Date": "2001-09-30", "Value": 7.8}, {"Date": "2001-06-30", "Value": 6.7}, {"Date": "2001-03-31", "Value": 9.5}, {"Date": "2000-12-31", "Value": 7.2}, {"Date": "2000-09-30", "Value": 7.2}, {"Date": "2000-06-30", "Value": 6.1}, {"Date": "2000-03-31", "Value": 8.9}];
 
-    dates = _.pluck(data, "Date");
-    dates.reverse()
-    dates.unshift('x');
-    rates   = _.pluck(data, "Value");
-    var max_rate = Math.max.apply(null, rates);
-    var min_rate = Math.min.apply(null, rates);
-    rates.unshift('Job Loss Percentage');
-    arr_same_vals = Array.apply(null, Array(rates.length -1 )).map(function(){return max_rate});
-    arr_same_vals.unshift('Background');
-
-    var rgbStr = function(r, g, b) {
-    	return "rgb("+r.toString()+","+g.toString()+","+b.toString()+")";
-    };
-
-    var chart = c3.generate({
-        data: {
-            x: 'x',
-            columns: [
-                dates,
-                rates
-            ],
-            type: 'line',
-            color:function(color,d){
-                r=115;
-                g=200;
-                b=(rates[d.index+1]-min_rate)/(max_rate-min_rate)*255;
-                console.log(b);
-                return rgbStr(r,g,b);
-            }
-        },
-        axis: {
-            x: {
-                type: 'timeseries',
-                tick: {
-                    format: '%Y-%m-%d'
-                }
-            },
-            y: {
-                max: max_rate,
-                min: min_rate,
-                // Range includes padding, set 0 if no padding needed
-                // padding: {top:0, bottom:0}
-            }
-        },
-        bar: {
-            width: {
-                ratio: 1.0 // this makes bar width 80% of length between ticks
-            }
-        }
-    });
-    setTimeout(function () {
-    	chart.load({
-            columns: [
-                arr_same_vals
-            ],
-            type: 'bar'
-        });
-    }, 1000);
-}
-*/
 </script>
 
 </body>
