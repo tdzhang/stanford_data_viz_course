@@ -33,7 +33,8 @@
 <h2>Choose Csv File and Draw</h2>
 <div id=inputs class=clearfix>
   <input type=file id=files name=files[] multiple />
-  <input id=btnDraw type="button" value="draw" />
+  utc_time_stamp_format(ex: "%m/%d/%y %H:%M:%S" ): <input type="text" id=timestamp_format_input name="utc_time_stamp_format" value="%Y-%m-%d %H:%M:%S"/><br>
+  <input id=btnDraw type="button" value="click to draw" />
 </div>
 <hr />
 <h2>Csv File Info:</h2>
@@ -80,6 +81,9 @@ var data = []; // raw data from csv file
 var plot_data = {}; // header sperated data
 var header_items = []; // array of header names (strings)
 var time_stamp_col_name = "utc_time_stamp";
+var time_stamp_handle_format = "%Y-%m-%d %H:%M:%S"
+//var time_stamp_handle_format = "%m/%d/%y %H:%M:%S"
+
 var utc_time_stamp=[];
 
 var plot_fields=[];
@@ -97,6 +101,8 @@ $(document).ready(function() {
         //var plot_div = document.getElementById("plot_div");
         //plot_div.innerHTML = "";
 
+        // get the time stamp format
+        $('#timestamp_format_input').val();
         //----------------------------------------------------------------
         plot_fields=[];
         for (index = 0; index < header_items.length; ++index) {
@@ -214,8 +220,8 @@ function handleCsvFile(file) {
     // Handle time stamp column
     delete plot_data[time_stamp_col_name];
     utc_time_stamp=_.pluck(data, time_stamp_col_name);
-    var format = d3.time.format("%Y-%m-%d %H:%M:%S")
-    utc_time_stamp = _.map(utc_time_stamp, function(str){ return format.parse(str); })
+    var format = d3.time.format(time_stamp_handle_format);
+    utc_time_stamp = _.map(utc_time_stamp, function(str){ return format.parse(str); });
     utc_time_stamp.unshift('x');
   };
   reader.onerror = function(){ alert('Unable to read ' + file.fileName); };
@@ -260,7 +266,7 @@ function drawGraph(timestamp, x_data, column_name, min_val, max_val, chart_id){
                 max: max_val,
                 min: min_val,
                 tick: {
-                    format: d3.format("+09.2f")
+                    format: d3.format("+09.3f")
                 }
             }
         },
