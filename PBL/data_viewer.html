@@ -32,8 +32,8 @@
 <body>
 <h2>Choose Csv File and Draw</h2>
 <div id=inputs class=clearfix>
+utc_time_stamp_format(ex: "%m/%d/%y %H:%M:%S" ): <input type="text" id=timestamp_format_input name="utc_time_stamp_format" value="%Y-%m-%d %H:%M:%S"/><br>
   <input type=file id=files name=files[] multiple />
-  utc_time_stamp_format(ex: "%m/%d/%y %H:%M:%S" ): <input type="text" id=timestamp_format_input name="utc_time_stamp_format" value="%Y-%m-%d %H:%M:%S"/><br>
   <input id=btnDraw type="button" value="click to draw" />
 </div>
 <hr />
@@ -102,7 +102,6 @@ $(document).ready(function() {
         //plot_div.innerHTML = "";
 
         // get the time stamp format
-        $('#timestamp_format_input').val();
         //----------------------------------------------------------------
         plot_fields=[];
         for (index = 0; index < header_items.length; ++index) {
@@ -220,6 +219,8 @@ function handleCsvFile(file) {
     // Handle time stamp column
     delete plot_data[time_stamp_col_name];
     utc_time_stamp=_.pluck(data, time_stamp_col_name);
+    
+    time_stamp_handle_format = $('#timestamp_format_input').val();
     var format = d3.time.format(time_stamp_handle_format);
     utc_time_stamp = _.map(utc_time_stamp, function(str){ return format.parse(str); });
     utc_time_stamp.unshift('x');
